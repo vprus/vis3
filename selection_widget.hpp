@@ -68,9 +68,9 @@ private:
        Данному методу все равно, работаем ли мы с собитиями или
        состояниями.
     */
-    void SelectionWidget::initializeFromTypes(const std::vector<QString>& full,
-                                              const std::vector<QString>& base,
-                                              const std::vector<QString>& current);
+    void initializeFromTypes(const std::vector<QString>& full,
+                             const std::vector<QString>& base,
+                             const std::vector<QString>& current);
     
     QListWidget* eventList;
     QPushButton* showAll;

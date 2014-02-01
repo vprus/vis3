@@ -87,7 +87,7 @@ public:
         r->begin = 40 + 10 + 20*current_state;
         r->end = r->begin + 30;
         r->component = 5 + current_state;
-        r->name = QString("State %1").arg(current_state).toAscii().data();
+        r->name = QString("State %1").arg(current_state).toLatin1();
 
         ++current_state;
 
@@ -145,7 +145,7 @@ public:
     std::string parent_name() const 
     { 
         if (currentElement.tagName() == "component")
-            return currentElement.attribute("name").toAscii().data();
+            return currentElement.attribute("name").toLatin1().data();
         else
             return "";
     }
@@ -209,7 +209,7 @@ public:
             r->begin = currentItem.attribute("begin").toInt();
             r->end = currentItem.attribute("end").toInt();
             r->component = currentSubcomponent;
-            r->name = currentItem.attribute("name").toAscii().data();
+            r->name = currentItem.attribute("name").toLatin1();
 
             return r;
         }
@@ -290,8 +290,8 @@ public:
             std::auto_ptr<Event_model> r(new Event_model);
             
             r->time = currentItem.attribute("time").toInt();
-            r->letter = currentItem.attribute("letter")[0].toAscii();
-            r->kind = currentItem.attribute("kind").toAscii().data();
+            r->letter = currentItem.attribute("letter")[0].toLatin1();
+            r->kind = currentItem.attribute("kind").toLatin1();
             r->component = currentSubcomponent;
 
             return r;
