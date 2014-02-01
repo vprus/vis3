@@ -1,0 +1,34 @@
+
+import cast ;
+exe vis3 : vis3.cpp vis3.qrc canvas.cpp timeline.cpp
+    canvas.hpp canvas_item.cpp event_list.hpp event_list.cpp main_window.hpp
+    selection_widget.hpp selection_widget.cpp
+    /qt//QtGui /qt//QtXml
+    tools//tools  
+    : <threading>multi 
+      <warnings-as-errors>on
+      <include>.
+    ;
+
+#install dist : vis3 : <install-dependencies>on <install-type>LIB
+#<install-type>EXE ;
+#explicit install ;
+
+
+#boostbook vis3 : vis3.xml 
+#    : <xsl:param>doc.standalone=true
+#      <xsl:param>nav.layout=none
+#      <xsl:param>chunker.output.encoding=KOI8-R 
+#    ;      
+
+
+#doxygen autodoc
+#    : [ glob *.hpp tools/*.hpp ] ;
+
+
+#BOOST_ROOT = /home/ghost/Work/boost-rc ;
+
+# Copy stylesheet and images from 'official' docs location
+#stage html : $(BOOST_ROOT)/doc/html/boostbook.css ;
+#stage html/images
+#    : [ path.glob $(BOOST_ROOT)/doc/html/images : *.png ] ;

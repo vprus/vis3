@@ -1,0 +1,10 @@
+
+lib tools 
+    : [ glob *.cpp ] 
+      tool.hpp
+       /qt//QtGui/<link>shared
+      [ cast _ moccable-cpp 
+          : browser.cpp goto.cpp measure.cpp filter.cpp find.cpp ] 
+      
+    : <link>static <include>..                              
+    ;

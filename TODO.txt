@@ -1,0 +1,77 @@
+
+== Interface development ==
+
+Group events.
+     - should specify arrow color
+     
+State_model -- more docs
+
+Time class.
+
+Undockability.
+
+Use shared_ptr<>
+
+Stock method to show tabular detailed information?
+
+Base class for freestanding tools?
+
+
+
+
+  - Use either QVector (by-value) or std::vector by reference in all interfaces.
+  
+   - Use private virtual methods everywhere.
+
+  - Preserve the component selection on each level? Or rather find out how it seem
+    to work now?
+
+  - Should store the parents stack?
+
+  - Fix up the event selection in find dialog.
+
+  - Fix up memory management for trace models. We leak like crazy at
+    the moment.
+
+  - Events to "buble up" to parent components.
+
+  - More What's this texts.
+
+  - Check again that clipping of component names againts 
+    component rects works.
+
+  - Set limits for zoom in.
+
+  - Filtering of send/recieve event should filter out arrows as well.
+
+  - Robustify model restore code, especially in face of new components
+    or event types.
+  
+  - It's hard to hit exactly on the check mark, and hitting outside
+    won't change check status.
+
+  - The "Measure" segfaults when just one component is selected.
+
+  - Limit the numbers of event shown, and display an error
+    message is the limit is exceeded.
+
+  - Set better size hint for the table?
+
+  - FIXME: filter_components must be the last call, otherwise
+    we'll reinitialize subcomponents array and boom.
+
+  - Change in model should update everything
+
+
+  - Render "root" component in a different style, to avoid confusing
+    it with real components.
+
+  - Handle enter press inside spin box that is used to specify max time?
+
+  - Make 'set start' actually work.
+
+  - Tune the pixel distance where we show events. And remove hardcode.
+
+  - Add 'isActive' method in the base controlling widget class.
+
+

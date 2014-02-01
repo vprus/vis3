@@ -1,0 +1,20 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file>wizard.png</file>
+	<file>stock_search.png</file>
+	<file>kruler.png</file>	
+	<file>viewmag+.png</file>		
+	<file>viewmag-.png</file>			
+	<file>start.png</file>				
+	<file>previous.png</file>				
+	<file>fit.png</file>				
+	<file>next.png</file>				
+	<file>finish.png</file>				
+	<file>filter.png</file>
+	<file>editcopy.png</file>
+	<file>find.png</file>
+	<file>link.png</file>
+	<file>point.png</file>
+    </qresource>
+</RCC>
