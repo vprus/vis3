@@ -204,6 +204,10 @@ public: // QWidget overrides
 
 
 private:
+
+    // Returns a width that is sufficient for drawTextBox, below,
+    // to draw text box without clipping.
+    int preferredTextBoxWidth(const QString& text);
     
     // Draws text in a nice frame. Uses current pen and brush for 
     // the frame, and black for text.
@@ -218,14 +222,6 @@ private:
                       int text_start_x = -1);
 
     QRect drawBaloon(QPainter* painter);
-
-
-//    // Returns the value that would be passed to 'width'
-//    unsigned textBoxWidth(const QString& text, 
-//                          const QFontMetrics& fm);
-                            
-
-
 
     /** Returns the pointer to the number of clickable component
         if point is withing the clickable area, and null otherwise. */
@@ -244,7 +240,14 @@ public:
     unsigned text_elements_height;
     unsigned text_height;
     unsigned text_letter_width;
+
+    // The width of the area on the left where component
+    // names are drawn
+    int components_area_width;
+    int component_rect_width;
     int right_margin;
+    int lifeline_spacing;
+    
 
     QVector< QVector<bool> > eventsNear;
 
@@ -353,7 +356,7 @@ void Canvas::addItem(class CanvasItem* item)
 
 Contents_widget::Contents_widget(Canvas* parent)
 : QWidget(parent), parent_(parent), model_(0), pixmap_(0), 
-  visir_position((unsigned)-1), right_margin(5)
+  visir_position((unsigned)-1)
 {
     setAttribute(Qt::WA_OpaquePaintEvent, true);
     setAttribute(Qt::WA_NoSystemBackground, true);
@@ -370,7 +373,7 @@ Contents_widget::Contents_widget(Canvas* parent)
     p.setColor(QPalette::Background, Qt::white);
     p.setColor(QPalette::Foreground, Qt::black);
     setPalette(p);
-    
+
 //    setAutoFillBackground(true);
 
 //    resize(560, 600);
@@ -394,24 +397,48 @@ void Contents_widget::setModel(Trace_model* model)
         eventsNear[i].resize(width());
     }
 
+    QFontMetrics fm(font());
 
-    // FIXME: compute the real size.
-    pixmap_ = new QPixmap(width(), 600);
+    int lifeline_spacing_factor = 3;
+    int em = fm.charWidth("M", 0);
+    std::string parent_name = model_->parent_name();
+    bool has_parent = !parent_name.empty();
+
+    lifeline_spacing = fm.height()*lifeline_spacing_factor;
+
+    int height = model_->component_names().size()
+        * (text_elements_height + lifeline_spacing) - lifeline_spacing;
+
+    if (has_parent)
+        height += em + text_elements_height + lifeline_spacing;
+                                                   
+    pixmap_ = new QPixmap(width(), height);
+
+
+    right_margin = 0; // It's OK to hardcode, this is just fade-out.
+    component_rect_width = 100;
+    for (unsigned i = 0; i < model_->component_names().size(); ++i)
+    {
+        QString name = model_->component_names()[i];
+        component_rect_width = max(component_rect_width,
+                                   preferredTextBoxWidth(name));
+    }
+    components_area_width = component_rect_width + em*3;
+
 
     QPainter painter(pixmap_);    
     
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setRenderHint(QPainter::TextAntialiasing);
 
-    painter.fillRect(0, 0, width(), height() , Qt::white);
+    painter.fillRect(0, 0, width(), height , Qt::white);
 
-
-    QLinearGradient g(0, 0, 130, 0);
+    QLinearGradient g(0, 0, components_area_width, 0);
     g.setColorAt(0, QColor(150, 150, 150));
     g.setColorAt(1, Qt::white);
     painter.setBrush(g);
     painter.setPen(Qt::NoPen);
-    painter.drawRect(0, 0, 130, height());            
+    painter.drawRect(0, 0, components_area_width, height);            
 
 
  
@@ -419,23 +446,25 @@ void Contents_widget::setModel(Trace_model* model)
     painter.setBrush(QColor("#10e205"));
     painter.setPen(Qt::black);
 
-    unsigned component_start = 5;
-    unsigned y = 15;
-    std::string parent_name = model_->parent_name();
-    bool has_parent = !parent_name.empty();
 
-    painter.setClipRect(0, 0, width()-right_margin, height());
+    unsigned component_start = em;
+    unsigned y = em + text_elements_height/2;
+    
+    int fade_out_width = em;
+
+    painter.setClipRect(0, 0, width()-right_margin, height);
 
     if (has_parent)
     {
         QRect r = drawTextBox(parent_name.c_str(), &painter, 
-                              component_start, y, 100 + 15 /* FIXME hardcode */,
+                              component_start, y, 
+                              component_rect_width + em,
                               text_elements_height);
 
         clickable_components.push_back(qMakePair(r, -1));
 
-        component_start += 15;
-        y += 50;
+        component_start += em;
+        y += lifeline_spacing;
     }
 
     for(unsigned i = 0; i < model_->component_names().size(); ++i)
@@ -446,10 +475,10 @@ void Contents_widget::setModel(Trace_model* model)
         if (composite)
         {
             drawTextBox(name, &painter, component_start + 4, y + 4,
-                        100, text_elements_height);
+                        component_rect_width, text_elements_height);
         }
         QRect r = drawTextBox(name, &painter, component_start, y,
-                              100, text_elements_height);
+                              component_rect_width, text_elements_height);
 
         if (composite)
         {
@@ -457,13 +486,14 @@ void Contents_widget::setModel(Trace_model* model)
         }
 
         lifeline_position.push_back(y);
-        painter.drawLine(130, y, width()-right_margin, y);
+        painter.drawLine(components_area_width, y, width()-right_margin, y);
 
-        lifeline_rects.push_back(QRect(130, y - text_elements_height/2+1,
-                                       width()-right_margin-130, 
+        lifeline_rects.push_back(QRect(components_area_width, 
+                                       y - text_elements_height/2+1,
+                                       width()-right_margin-components_area_width, 
                                        text_elements_height/2*2+2));
 
-        y += 50;
+        y += lifeline_spacing;
 
 #if 0
         if (i == 3)
@@ -484,7 +514,8 @@ void Contents_widget::setModel(Trace_model* model)
 #endif        
     }
 
-    painter.setClipRect(130, 0, width()-right_margin-130, height());
+    painter.setClipRect(components_area_width, 0, 
+                        width()-right_margin-components_area_width, height);
 
     // Draw states.
     model_->rewind();
@@ -501,9 +532,9 @@ void Contents_widget::setModel(Trace_model* model)
         painter.setBrush(Qt::yellow);
 
         int text_begin = -1;
-        if (pixel_begin < 130)
+        if (pixel_begin < components_area_width)
         {
-            text_begin = 130;
+            text_begin = components_area_width;
         }
 
         QRect r = drawTextBox(s->name, &painter, 
@@ -588,24 +619,15 @@ void Contents_widget::setModel(Trace_model* model)
         draw_unified_arrow(from.x(), from.y(), to.x(), to.y(), painter);
     }
 
-    
-
-
-//    draw_unified_arrow(130, lifeline_position[7], 
-//                       200, lifeline_position[2],
-//                       painter);
-
     // Draw the final fade-out.
-    {
-        int fade_out_width = 15;
-        
+    {        
         QLinearGradient g(width()-right_margin-fade_out_width, 
                           0, width()-right_margin, 0);
         g.setColorAt(0, QColor(255, 255, 255, 0));
         g.setColorAt(1, Qt::white);
         
         painter.fillRect(width()-right_margin-fade_out_width, 0, 
-                         fade_out_width, height(), g);
+                         fade_out_width, height, g);
     }
 
     
@@ -625,12 +647,12 @@ void Contents_widget::paintEvent(QPaintEvent* event)
     // Draw outside of pixmap
     painter.fillRect(0, pixmap_->height(), width(), 
                      height()-pixmap_->height(), Qt::white);
-    QLinearGradient g(0, 0, 130, 0);
+    QLinearGradient g(0, 0, components_area_width, 0);
     g.setColorAt(0, QColor(150, 150, 150));
     g.setColorAt(1, Qt::white);
     painter.setBrush(g);
     painter.setPen(Qt::NoPen);
-    painter.drawRect(0, pixmap_->height(), 130, height()-pixmap_->height());            
+    painter.drawRect(0, pixmap_->height(), components_area_width, height()-pixmap_->height());            
 
     if (visir_position != -1)
     {
@@ -653,7 +675,7 @@ void Contents_widget::paintEvent(QPaintEvent* event)
 
 void Contents_widget::mouseMoveEvent(QMouseEvent* ev)
 {
-    if (ev->x() >= 130)
+    if (ev->x() >= components_area_width)
     {
         if (ev->x() != visir_position)
         {
@@ -694,7 +716,7 @@ QSize Contents_widget::minimumSizeHint() const
     if (!model_)
         return QSize(300, 200);
     else
-        return QSize(300, model_->component_names().size()*50 
+        return QSize(300, model_->component_names().size()*lifeline_spacing 
                      + text_elements_height + 100);
 }
 
@@ -704,6 +726,18 @@ QSize Contents_widget::sizeHint() const
     return minimumSizeHint();
 }
 
+int Contents_widget::preferredTextBoxWidth(const QString& text)
+{
+    QFontMetrics fm(font());
+    int width = fm.width(text);
+    
+    int left_right_pad = fm.charWidth("n", 0);
+    width += 2*left_right_pad;    
+
+    return width;
+}
+
+
 QRect Contents_widget::drawTextBox(
     const QString& text, QPainter* painter,
     int x, int y, int width, int height,
@@ -711,11 +745,7 @@ QRect Contents_widget::drawTextBox(
 {    
     if (width == -1)
     {
-        QFontMetrics fm(font());
-        width = fm.width(text);
-
-        int left_right_pad = fm.charWidth("n", 0);
-        width += 2*left_right_pad;
+        width = preferredTextBoxWidth(text);
     }
 
     QRect r(x, y-height/2, width, height);
@@ -771,19 +801,20 @@ QRect Contents_widget::drawBaloon(QPainter* painter)
 
 int Contents_widget::pixelPostionForTime(unsigned time)
 {
-    int lifelines_width = pixmap_->width() - 130 - right_margin;
+    int lifelines_width = pixmap_->width() - components_area_width - right_margin;
 
     int delta = (int)time - (int)model_->min_time();
     int max = (int)(model_->max_time()) - (int)(model_->min_time());
 
     double ratio = double(delta)/double(max);
-    return int(ratio*lifelines_width + 130);
+    return int(ratio*lifelines_width + components_area_width);
 }
 
 int Contents_widget::timeForPixel(int pixel_x)
 {
-    unsigned lifelines_width = pixmap_->width() - 130 - right_margin;
-    pixel_x -= 130;
+    unsigned lifelines_width = pixmap_->width() - components_area_width 
+        - right_margin;
+    pixel_x -= components_area_width;
 
     return int(double(pixel_x)/lifelines_width
         *(model_->max_time()-model_->min_time()) + model_->min_time());
@@ -863,7 +894,7 @@ void Contents_widget::targetUnderCursor(
 {
     *target = Canvas::nothingClicked;
 
-    if (pos.x() < 130)
+    if (pos.x() < components_area_width)
     {
         const int* c = clickable_component(pos);
         if (c)
